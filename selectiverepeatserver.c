@@ -1,56 +1,58 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #include <unistd.h>
-#include <stdbool.h>
+#include <arpa/inet.h>
+#include <time.h>
 
-int main()
-{
-  char buff[1024];
-  int serverSocket, clientSocket;
-  struct sockaddr_in serverAddr, clientAddr;
-  socklen_t addr_size;
+#define PORT 8080
+#define MAX_SEQ 10  // Maximum sequence number
 
-  bool receivedFrames[1024] = {false}; // Track received frames
+int main() {
+    int serverSocket;
+    struct sockaddr_in serverAddr, clientAddr;
+    socklen_t addrLen = sizeof(clientAddr);
+    char buffer[1024];
+    int windowStart = 0;
+  
+    serverSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(PORT);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
 
-  serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-  serverAddr.sin_family = AF_INET;
-  serverAddr.sin_port = htons(9999);
-  serverAddr.sin_addr.s_addr = INADDR_ANY;
+    printf("Server up\nSelective Repeat scheme\n");
 
-  bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
-  listen(serverSocket, 5);
+    srand(time(0));
 
-  printf("Server listening on port 9999\n");
-  addr_size = sizeof(clientAddr);
-  clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &addr_size);
+    for (int i = 0; i < MAX_SEQ; i++) {
+        char message[1024];
+        sprintf(message, "server message :%d", i);
 
-  while (1)
-  {
-    int bytesReceived = recv(clientSocket, buff, sizeof(buff), 0);
-    if (bytesReceived <= 0)
-      break; // Exit if no data received
+        // Send message to client
+        sendto(serverSocket, message, strlen(message), 0, (struct sockaddr *)&clientAddr, sizeof(clientAddr));
+        printf("Message sent to client : %s\n", message);
 
-    buff[bytesReceived] = '\0';
-    int frameNumber;
-    sscanf(buff, "Frame %d", &frameNumber);
-    printf("Received %s\n", buff);
+        // Wait for acknowledgment
+        recvfrom(serverSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &addrLen);
+        int ackSeq;
+        sscanf(buffer, "ack %d", &ackSeq);
 
-    // If frame is valid, mark it as received
-    if (frameNumber >= 0 && frameNumber < 1024 && !receivedFrames[frameNumber])
-    {
-      receivedFrames[frameNumber] = true;
+        // Check if acknowledgment is for the correct message
+        if (ackSeq != i) {
+            printf("Corrupt message acknowledgement (msg %d)\n", i);
+
+            // Prepare retransmission message
+            sprintf(message, "reserver message :%d", i);
+
+            // Retransmit message to client
+            sendto(serverSocket, message, strlen(message), 0, (struct sockaddr *)&clientAddr, sizeof(clientAddr));
+            printf("Retransmitting message to client : %s\n", message);
+        } else {
+            printf("Acknowledgement of %d received\n", i);
+        }
     }
 
-    // Send acknowledgment for the received frame
-    sprintf(buff, "Ack %d", frameNumber);
-    send(clientSocket, buff, strlen(buff), 0);
-    printf("Sent acknowledgment for frame %d\n", frameNumber);
-  }
-
-  close(clientSocket);
-  close(serverSocket);
-  return 0;
+    close(serverSocket);
+    return 0;
 }
