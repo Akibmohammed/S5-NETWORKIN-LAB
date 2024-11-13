@@ -1,58 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
 #include <unistd.h>
-#include <stdbool.h>
+#include <arpa/inet.h>
+#include <time.h>
 
-#define WINDOW_SIZE 4
+#define PORT 8080
+#define MAX_SEQ 10
 
 int main() {
-    char buff[1024];
-    int clientSocket, numFrames;
+    int clientSocket;
     struct sockaddr_in serverAddr;
-    bool ackReceived[1024] = {false};  
+    socklen_t addrLen = sizeof(serverAddr);
+    char buffer[1024];
+    int expectedSeq = 0;
 
-    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    // Seed for random corruption
+    srand(time(0));
+
+    clientSocket = socket(AF_INET, SOCK_DGRAM, 0);
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(9999);
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    serverAddr.sin_port = htons(PORT);
+    inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr);
 
-    connect(clientSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+    printf("Client with individual acknowledgment scheme\n");
 
-    printf("Enter the number of frames to be sent: ");
-    scanf("%d", &numFrames);
+    while (expectedSeq < MAX_SEQ) {
+        // Receive message from server
+        recvfrom(clientSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&serverAddr, &addrLen);
+        buffer[strlen(buffer)] = '\0';
 
-    int base = 0, nextFrame = 0;
+        int seqNum;
+        sscanf(buffer, "server message :%d", &seqNum);
+        printf("Message received from server: %s\n", buffer);
 
-    while (base < numFrames) {
-        // Send frames within the window
-        while (nextFrame < base + WINDOW_SIZE && nextFrame < numFrames) {
-            if (!ackReceived[nextFrame]) { // Send only if not acknowledged
-                sprintf(buff, "Frame %d", nextFrame);
-                send(clientSocket, buff, strlen(buff), 0);
-                printf("Sent frame %d\n", nextFrame);
-            }
-            nextFrame++;
+        // Simulate corruption randomly
+        int isCorrupt = rand() % 2;
+        printf("Corruption status: %d\n", isCorrupt);
+
+        // Prepare acknowledgment message
+        char ack[1024];
+        if (isCorrupt) {
+            sprintf(ack, "nack %d", seqNum);
+            printf("Sending negative acknowledgment for message %d\n", seqNum);
+        } else {
+            sprintf(ack, "ack %d", seqNum);
+            printf("Sending positive acknowledgment for message %d\n", seqNum);
+            expectedSeq++;  // Move to the next expected message if no corruption
         }
-        int bytesReceived = recv(clientSocket, buff, sizeof(buff), 0);
-        if (bytesReceived > 0) {
-            buff[bytesReceived] = '\0';
-            int ackNumber;
-            sscanf(buff, "Ack %d", &ackNumber);
-            printf("Ack received: %s\n", buff);
 
-            // Mark frame as acknowledged
-            if (ackNumber >= 0 && ackNumber < numFrames) {
-                ackReceived[ackNumber] = true;
-
-                // Slide window if the base frame is acknowledged
-                while (ackReceived[base] && base < numFrames) {
-                    base++;
-                }
-            }
-        }
+        // Send acknowledgment to server
+        sendto(clientSocket, ack, strlen(ack), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+        printf("Response/acknowledgement sent for message %d\n", seqNum);
     }
 
     close(clientSocket);
