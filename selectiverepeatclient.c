@@ -1,65 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <time.h>
+#include <unistd.h>
+#include <stdbool.h>
 
-#define PORT 8080
-#define MAX_SEQ 10
-
-int check_corruption() {
-    // Randomly simulate corruption
-    return rand() % 2;
-}
-
-void send_ack(int socket, struct sockaddr_in *serverAddr, int seq, int isNegative) {
-    char ack[1024];
-    if (isNegative) {
-        sprintf(ack, "nack %d", seq);
-    } else {
-        sprintf(ack, "ack %d", seq);
-    }
-    sendto(socket, ack, strlen(ack), 0, (struct sockaddr *)serverAddr, sizeof(*serverAddr));
-    printf("Response/acknowledgement sent for message %d\n", seq);
-}
+#define WINDOW_SIZE 4
 
 int main() {
-    int clientSocket;
+    char buff[1024];
+    int clientSocket, numFrames;
     struct sockaddr_in serverAddr;
-    socklen_t addrLen = sizeof(serverAddr);
-    char buffer[1024];
-    int expectedSeq = 0;
+    bool ackReceived[1024] = {false};  
 
-    // Seed for random corruption
-    srand(time(0));
-
-    // Create socket
-    clientSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(PORT);
-    inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr);
+    serverAddr.sin_port = htons(9999);
+    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    printf("Client with individual acknowledgment scheme\n");
+    connect(clientSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
 
-    // Main loop to receive messages
-    while (expectedSeq < MAX_SEQ) {
-        recvfrom(clientSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&serverAddr, &addrLen);
-        buffer[strlen(buffer)] = '\0';
+    printf("Enter the number of frames to be sent: ");
+    scanf("%d", &numFrames);
 
-        int seqNum;
-        sscanf(buffer, "server message :%d", &seqNum);
-        printf("Message received from server: %s\n", buffer);
+    int base = 0, nextFrame = 0;
 
-        // Check for corruption
-        int isCorrupt = check_corruption();
-        printf("Corruption status: %d\n", isCorrupt);
+    while (base < numFrames) {
+        // Send frames within the window
+        while (nextFrame < base + WINDOW_SIZE && nextFrame < numFrames) {
+            if (!ackReceived[nextFrame]) { // Send only if not acknowledged
+                sprintf(buff, "Frame %d", nextFrame);
+                send(clientSocket, buff, strlen(buff), 0);
+                printf("Sent frame %d\n", nextFrame);
+            }
+            nextFrame++;
+        }
+        int bytesReceived = recv(clientSocket, buff, sizeof(buff), 0);
+        if (bytesReceived > 0) {
+            buff[bytesReceived] = '\0';
+            int ackNumber;
+            sscanf(buff, "Ack %d", &ackNumber);
+            printf("Ack received: %s\n", buff);
 
-        if (isCorrupt) {
-            send_ack(clientSocket, &serverAddr, seqNum, 1);  // Send negative acknowledgment
-        } else {
-            send_ack(clientSocket, &serverAddr, seqNum, 0);  // Send positive acknowledgment
-            expectedSeq++;  // Move to next expected message
+            // Mark frame as acknowledged
+            if (ackNumber >= 0 && ackNumber < numFrames) {
+                ackReceived[ackNumber] = true;
+
+                // Slide window if the base frame is acknowledged
+                while (ackReceived[base] && base < numFrames) {
+                    base++;
+                }
+            }
         }
     }
 
