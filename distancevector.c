@@ -1,56 +1,56 @@
 #include <stdio.h>
-#define INF 999  // Represents infinity for nodes not directly connected
-#define MAX_NODES 10
+#define INF 999
+#define MAX_NODE 10
 
-int main() {
-    int numNodes;
-    int costMatrix[MAX_NODES][MAX_NODES];
-    int distanceVector[MAX_NODES][MAX_NODES];
-    int nextHop[MAX_NODES][MAX_NODES];
+int main(){
+    int numnodes;
+    int costmatrix[MAX_NODE][MAX_NODE];
+    int distancevector[MAX_NODE][MAX_NODE];
+    int nexthop[MAX_NODE][MAX_NODE];
 
-    // Read the number of nodes in the network
     printf("Enter the number of nodes: ");
-    scanf("%d", &numNodes);
+    scanf("%d", &numnodes);
 
-    // Initialize the cost matrix
     printf("Enter the cost matrix (use %d for infinity):\n", INF);
-    for (int i = 0; i < numNodes; i++) {
-        for (int j = 0; j < numNodes; j++) {
-            scanf("%d", &costMatrix[i][j]);
-            if (i == j)
-                costMatrix[i][j] = 0;  // Distance to itself is zero
-            distanceVector[i][j] = costMatrix[i][j];  // Initialize distance vector
-            if (costMatrix[i][j] != INF && i != j)
-                nextHop[i][j] = j;  // Initial next hop is the direct neighbor
-            else
-                nextHop[i][j] = -1; // No direct connection
+    for(int i = 0; i < numnodes; i++){
+        for(int j = 0; j < numnodes; j++){
+            scanf("%d", &costmatrix[i][j]);
+            if(i == j){
+                costmatrix[i][j] = 0; 
+            }
+            distancevector[i][j] = costmatrix[i][j];  
+            if(costmatrix[i][j] != INF && i != j){
+                nexthop[i][j] = j; 
+            } else {
+                nexthop[i][j] = -1; 
+            }
         }
     }
 
     // Distance Vector Routing Algorithm
     int updated;
-    do {
+    do{
         updated = 0;
-        for (int i = 0; i < numNodes; i++) {
-            for (int j = 0; j < numNodes; j++) {
-                for (int k = 0; k < numNodes; k++) {
-                    if (distanceVector[i][j] > costMatrix[i][k] + distanceVector[k][j]) {
-                        distanceVector[i][j] = costMatrix[i][k] + distanceVector[k][j];
-                        nextHop[i][j] = k;
+        for(int i = 0; i < numnodes; i++){
+            for(int j = 0; j < numnodes; j++){
+                for(int k = 0; k < numnodes; k++){
+                    if(distancevector[i][j] > costmatrix[i][k] + distancevector[k][j]){
+                        distancevector[i][j] = costmatrix[i][k] + distancevector[k][j];
+                        nexthop[i][j] = nexthop[i][k];
                         updated = 1;
                     }
                 }
             }
         }
-    } while (updated);
+    } while(updated);
 
-    // Display the distance and next hop for each pair of nodes
-    for (int i = 0; i < numNodes; i++) {
+
+    for(int i = 0; i < numnodes; i++){
         printf("\nRouting table for node %d:\n", i);
         printf("Destination\tCost\tNext Hop\n");
-        for (int j = 0; j < numNodes; j++) {
-            if (i != j) {
-                printf("%d\t\t%d\t\t%d\n", j, distanceVector[i][j], nextHop[i][j]);
+        for(int j = 0; j < numnodes; j++){
+            if(i != j){
+                printf("%d\t\t%d\t\t%d\n", j, distancevector[i][j], nexthop[i][j]);
             }
         }
     }
