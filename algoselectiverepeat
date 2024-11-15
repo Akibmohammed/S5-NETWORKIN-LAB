@@ -22,3 +22,27 @@ Repeat Steps 2–3 until all frames are acknowledged.
 End:
 
 Close the connection once all frames are acknowledged.
+
+
+Server (Receiver)
+Initialize:
+
+Track received frames in an array (framesReceived) and set up a window to receive frames in order.
+Receive Frames:
+
+While there are frames left to receive:
+Receive a frame from the client.
+Simulate network issues by randomly "corrupting" frames (some frames are discarded).
+If the frame is not corrupted:
+Mark it as received.
+Send an acknowledgment for the frame back to the client.
+Check Completion:
+
+If all frames are received and acknowledged:
+Print a success message.
+End:
+
+Close the connection.
+
+
+
