@@ -11,7 +11,6 @@ void leaky_bucket(int incoming_packets[], int n) {
         int incoming = incoming_packets[i];
         printf("Incoming packet size: %d\n", incoming);
 
-        // If incoming packets overflow the bucket, drop excess packets
         if (incoming + bucket_content > BUCKET_SIZE) {
             int dropped = (incoming + bucket_content) - BUCKET_SIZE;
             printf("Bucket overflow! Dropped %d packets.\n", dropped);
@@ -21,7 +20,6 @@ void leaky_bucket(int incoming_packets[], int n) {
             printf("Bucket content after arrival: %d packets.\n", bucket_content);
         }
 
-        // Send packets at a fixed rate
         if (bucket_content >= OUT_RATE) {
             bucket_content -= OUT_RATE;
             printf("Sent %d packets. Remaining in bucket: %d packets.\n", OUT_RATE, bucket_content);
