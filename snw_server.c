@@ -25,7 +25,6 @@ int main() {
 
     int frameNumber = 0;
     while (1) {
-        // Receive frame from client
         int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
         if (bytesReceived <= 0) {
             printf("Client disconnected.\n");
@@ -35,7 +34,6 @@ int main() {
         buffer[bytesReceived] = '\0';  
         printf("Received: %s\n", buffer);
 
-        // Send acknowledgment back to the client
         sprintf(buffer, "Ack for frame %d", frameNumber);
         send(clientSocket, buffer, strlen(buffer), 0);
         printf("Ack sent for frame %d\n", frameNumber);
