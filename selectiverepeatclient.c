@@ -14,8 +14,7 @@ int main() {
     socklen_t addrLen = sizeof(serverAddr);
     char buffer[1024];
     int expectedSeq = 0;
-
-    // Seed for random corruption
+    
     srand(time(0));
 
     clientSocket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -34,11 +33,9 @@ int main() {
         sscanf(buffer, "server message :%d", &seqNum);
         printf("Message received from server: %s\n", buffer);
 
-        // Simulate corruption randomly
         int isCorrupt = rand() % 2;
         printf("Corruption status: %d\n", isCorrupt);
 
-        // Prepare acknowledgment message
         char ack[1024];
         if (isCorrupt) {
             sprintf(ack, "nack %d", seqNum);
@@ -46,10 +43,9 @@ int main() {
         } else {
             sprintf(ack, "ack %d", seqNum);
             printf("Sending positive acknowledgment for message %d\n", seqNum);
-            expectedSeq++;  // Move to the next expected message if no corruption
+            expectedSeq++;
         }
 
-        // Send acknowledgment to server
         sendto(clientSocket, ack, strlen(ack), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
         printf("Response/acknowledgement sent for message %d\n", seqNum);
     }
