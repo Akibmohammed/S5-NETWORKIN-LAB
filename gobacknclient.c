@@ -18,7 +18,6 @@ int main() {
     int ack;
     int frames[TOTAL_FRAMES];
 
-    // Initialize frames with sequence numbers
     for (int i = 0; i < TOTAL_FRAMES; i++) {
         frames[i] = i;
     }
@@ -36,23 +35,20 @@ int main() {
     printf("Client started. Sending frames...\n");
 
     while (base < TOTAL_FRAMES) {
-        // Send frames in the window
         while (nextFrameToSend < base + WINDOW_SIZE && nextFrameToSend < TOTAL_FRAMES) {
             printf("Sending frame: %d\n", frames[nextFrameToSend]);
             sendto(sockfd, &frames[nextFrameToSend], sizeof(int), 0, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
             nextFrameToSend++;
         }
-
-        // Receive ACK
         addr_size = sizeof(serverAddr);
         int recv_status = recvfrom(sockfd, &ack, sizeof(ack), 0, (struct sockaddr *)&serverAddr, &addr_size);
 
         if (recv_status > 0) {
             printf("Received ACK for frame: %d\n\n", ack);
-            base = ack + 1;  // Slide the window if ACK received
+            base = ack + 1; 
         } else {
             printf("Timeout or error. Resending from frame %d\n\n", base);
-            nextFrameToSend = base;  // Reset to base for retransmission
+            nextFrameToSend = base; 
         }
     }
 
