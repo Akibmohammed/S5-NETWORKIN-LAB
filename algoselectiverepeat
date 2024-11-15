@@ -1,48 +1,57 @@
-Client (Sender)
-Initialize:
+Algorithm: Selective Repeat Protocol (Server-Side)
 
-Set up a sliding window of frames (WINDOW_SIZE).
-Track the next frame to send (frameToSend) and an array frameAck to mark acknowledged frames.
-Sending Frames:
+	1.	Initialize Server:
+	•	Create a TCP socket (serverSocket).
+	•	Bind the server to a specific port (PORT) and set it to listen for incoming connections.
+	•	Accept a client connection (clientSocket).
+	2.	Set Up for Data Handling:
+	•	Initialize an array (framesReceived) to track the reception status of frames (default: all 0).
+	•	Use srand() to seed randomness for simulating frame corruption and delays.
+	3.	Receive Frames:
+	•	Enter a loop to continuously receive data from the client:
+	•	Use recv() to receive the frame data from the client.
+	•	Extract the frame number from the received data.
+	•	Print the received frame number.
+	4.	Simulate Random Delay & Corruption:
+	•	Introduce a random delay to simulate network latency.
+	•	Randomly determine if the frame is corrupted:
+	•	If corrupted, print a message and skip processing for this frame.
+	5.	Acknowledge Frame if Valid:
+	•	Mark the frame as received in framesReceived.
+	•	Send an acknowledgment (ACK) back to the client for the specific frame number.
+	6.	Check Completion:
+	•	Check if all frames have been successfully received by iterating over framesReceived.
+	•	If all frames are received, print a success message and break the loop.
+	7.	Cleanup:
+	•	Close the client and server sockets.
 
-While there are frames left to send:
-For each frame within the current window:
-If the frame hasn’t been acknowledged, send it to the server.
-Wait for acknowledgments from the server.
-Receive Acknowledgments:
 
-For each frame in the window:
-Wait for acknowledgment with a timeout:
-If acknowledgment is received:
-Mark the frame as acknowledged.
-If the lowest frame in the window is acknowledged, slide the window forward.
-If timeout occurs (no acknowledgment), mark the frame for resending.
-Repeat Steps 2–3 until all frames are acknowledged.
+Algorithm: Selective Repeat Protocol (Client-Side)
 
-End:
-
-Close the connection once all frames are acknowledged.
-
-
-Server (Receiver)
-Initialize:
-
-Track received frames in an array (framesReceived) and set up a window to receive frames in order.
-Receive Frames:
-
-While there are frames left to receive:
-Receive a frame from the client.
-Simulate network issues by randomly "corrupting" frames (some frames are discarded).
-If the frame is not corrupted:
-Mark it as received.
-Send an acknowledgment for the frame back to the client.
-Check Completion:
-
-If all frames are received and acknowledged:
-Print a success message.
-End:
-
-Close the connection.
-
+	1.	Initialize Client:
+	•	Create a TCP socket (clientSocket).
+	•	Connect to the server using the server’s IP and port (PORT).
+	2.	Setup for Frame Transmission:
+	•	Initialize tracking arrays:
+	•	frameAck[]: Keeps track of which frames have been acknowledged (default: all 0).
+	•	frameToSend: Points to the next frame that needs to be sent.
+	•	framesSent: Counts the total number of frames successfully sent.
+	3.	Transmit Frames:
+	•	While not all frames are sent (framesSent < MAX_FRAMES):
+	1.	Send Unacknowledged Frames in the Window:
+	•	Iterate over the frames in the window, sending unacknowledged frames until the window limit (WINDOW_SIZE) is reached.
+	2.	Wait for Acknowledgments:
+	•	Use select() with a timeout (TIMEOUT_SEC) to wait for acknowledgments.
+	•	If select() returns due to a timeout:
+	•	Print a message and prepare to resend the frame.
+	3.	Process Acknowledgment:
+	•	If acknowledgment (ACK) is received:
+	•	Extract the acknowledged frame number.
+	•	Update frameAck[] for the received acknowledgment.
+	•	Move frameToSend to the next unacknowledged frame if applicable.
+	4.	Completion:
+	•	Once all frames are successfully sent and acknowledged, print a success message.
+	5.	Cleanup:
+	•	Close the client socket.
 
 
