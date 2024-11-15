@@ -29,7 +29,7 @@ int main(){
         fgets(buffer,sizeof(buffer),stdin);
         send(clientsocket,buffer,1024,0);
 
-        int byterecieved=recvfrom(clientsocket,buffer,1024,0,(Struct sockaddr*)&saddr,&len);
+        int byterecieved=recv(clientsocket,buffer,sizeof(buffer),0);
         if(byterecieved<=0){
             break;
         }
