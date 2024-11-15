@@ -28,8 +28,6 @@ void leaky_bucket(int incoming_packets[], int n) {
             bucket_content = 0;
         }
     }
-
-    // Send any remaining packets in the bucket
     while (bucket_content > 0) {
         printf("\nSending remaining packets...\n");
         if (bucket_content >= OUT_RATE) {
@@ -43,7 +41,7 @@ void leaky_bucket(int incoming_packets[], int n) {
 }
 
 int main() {
-    int incoming_packets[] = {4, 6, 8, 2, 7, 4};  // Packets arriving at each time step
+    int incoming_packets[] = {4, 6, 8, 2, 7, 4}; 
     int n = sizeof(incoming_packets) / sizeof(incoming_packets[0]);
 
     printf("Leaky Bucket Simulation\n");
