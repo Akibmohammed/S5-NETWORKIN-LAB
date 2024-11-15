@@ -29,23 +29,18 @@ int main() {
         char message[1024];
         sprintf(message, "server message :%d", i);
 
-        // Send message to client
         sendto(serverSocket, message, strlen(message), 0, (struct sockaddr *)&clientAddr, sizeof(clientAddr));
         printf("Message sent to client : %s\n", message);
 
-        // Wait for acknowledgment
         recvfrom(serverSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &addrLen);
         int ackSeq;
         sscanf(buffer, "ack %d", &ackSeq);
 
-        // Check if acknowledgment is for the correct message
         if (ackSeq != i) {
             printf("Corrupt message acknowledgement (msg %d)\n", i);
 
-            // Prepare retransmission message
             sprintf(message, "reserver message :%d", i);
 
-            // Retransmit message to client
             sendto(serverSocket, message, strlen(message), 0, (struct sockaddr *)&clientAddr, sizeof(clientAddr));
             printf("Retransmitting message to client : %s\n", message);
         } else {
