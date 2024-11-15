@@ -26,8 +26,6 @@ int main(){
             }
         }
     }
-
-    // Distance Vector Routing Algorithm
     int updated;
     do{
         updated = 0;
@@ -43,8 +41,7 @@ int main(){
             }
         }
     } while(updated);
-
-
+    
     for(int i = 0; i < numnodes; i++){
         printf("\nRouting table for node %d:\n", i);
         printf("Destination\tCost\tNext Hop\n");
