@@ -25,7 +25,7 @@ int main(){
    connect(clientsocket,(Struct sockaddr*)&saddr,len);
     
     while(1){
-        printf("Enter message to client: ");
+        printf("Enter message to server: ");
         fgets(buffer,sizeof(buffer),stdin);
         send(clientsocket,buffer,1024,0);
 
@@ -34,7 +34,7 @@ int main(){
             break;
         }
         buffer[byterecieved]='\0';
-        printf("client: %s",buffer);
+        printf("server: %s",buffer);
 
         
     }
