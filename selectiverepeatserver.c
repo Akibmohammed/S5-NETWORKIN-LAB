@@ -5,49 +5,90 @@
 #include <arpa/inet.h>
 #include <time.h>
 
-#define PORT 8080
-#define MAX_SEQ 10  // Maximum sequence number
+#define PORT 5000
+#define MAX_FRAMES 10
+#define WINDOW_SIZE 4
+#define FRAME_SIZE 1024
+
+int is_frame_corrupted() {
+    return rand() % 5 == 0;  
+}
+void random_delay() {
+    int delay = rand() % 1000; 
+    usleep(delay * 1000); 
+}
 
 int main() {
-    int serverSocket;
-    struct sockaddr_in serverAddr, clientAddr;
-    socklen_t addrLen = sizeof(clientAddr);
-    char buffer[1024];
-    int windowStart = 0;
-  
-    serverSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr;
+    char buffer[FRAME_SIZE];
+    int framesReceived[MAX_FRAMES] = {0}; 
+
+    srand(time(0)); 
+
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket < 0) {
+        perror("Server socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(PORT);
     serverAddr.sin_addr.s_addr = INADDR_ANY;
-    bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr));
+    serverAddr.sin_port = htons(PORT);
 
-    printf("Server up\nSelective Repeat scheme\n");
+    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        perror("Binding failed");
+        close(serverSocket);
+        exit(EXIT_FAILURE);
+    }
 
-    srand(time(0));
+    listen(serverSocket, 5);
+    printf("Server listening on port %d...\n", PORT);
 
-    for (int i = 0; i < MAX_SEQ; i++) {
-        char message[1024];
-        sprintf(message, "server message :%d", i);
+    clientSocket = accept(serverSocket, NULL, NULL);
+    if (clientSocket < 0) {
+        perror("Server accept failed");
+        close(serverSocket);
+        exit(EXIT_FAILURE);
+    }
 
-        sendto(serverSocket, message, strlen(message), 0, (struct sockaddr *)&clientAddr, sizeof(clientAddr));
-        printf("Message sent to client : %s\n", message);
+    while (1) {
+        int bytesReceived = recv(clientSocket, buffer, FRAME_SIZE, 0);
+        if (bytesReceived <= 0) {
+            printf("Connection closed or error occurred\n");
+            break;
+        }
 
-        recvfrom(serverSocket, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddr, &addrLen);
-        int ackSeq;
-        sscanf(buffer, "ack %d", &ackSeq);
+        int frameNumber = atoi(buffer + 6); 
+        printf("Received Frame %d\n", frameNumber);
 
-        if (ackSeq != i) {
-            printf("Corrupt message acknowledgement (msg %d)\n", i);
+        random_delay();
 
-            sprintf(message, "reserver message :%d", i);
+        if (is_frame_corrupted()) {
+            printf("Frame %d is corrupted. Discarding.\n", frameNumber);
+            continue; 
+        }
 
-            sendto(serverSocket, message, strlen(message), 0, (struct sockaddr *)&clientAddr, sizeof(clientAddr));
-            printf("Retransmitting message to client : %s\n", message);
-        } else {
-            printf("Acknowledgement of %d received\n", i);
+        framesReceived[frameNumber] = 1; 
+
+        sprintf(buffer, "ACK %d", frameNumber);
+        send(clientSocket, buffer, strlen(buffer), 0);
+        printf("Acknowledgment sent for Frame %d\n", frameNumber);
+
+        int allReceived = 1;
+        for (int i = 0; i < MAX_FRAMES; i++) {
+            if (framesReceived[i] == 0) {
+                allReceived = 0;
+                break;
+            }
+        }
+        if (allReceived) {
+            printf("All frames received successfully.\n");
+            break;
         }
     }
 
+    close(clientSocket);
     close(serverSocket);
     return 0;
 }
