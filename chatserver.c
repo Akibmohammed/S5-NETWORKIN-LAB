@@ -23,11 +23,10 @@ int main() {
 
     clientSocket = accept(serverSocket, (struct sockaddr *)&serverAddr, &len);
 
-    // Chat loop: receive from client and send back to client
     while (1) {
         int bytesReceived = recv(clientSocket, buffer, sizeof(buffer), 0);
-        if (bytesReceived <= 0) break; // Exit if client disconnects
-        buffer[bytesReceived] = '\0';  // Null-terminate the received message
+        if (bytesReceived <= 0) break; 
+        buffer[bytesReceived] = '\0';  
         printf("Client: %s\n", buffer);
         
         printf("Enter message to client: ");
