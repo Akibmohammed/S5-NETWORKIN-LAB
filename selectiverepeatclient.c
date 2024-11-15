@@ -9,7 +9,7 @@
 #define MAX_FRAMES 10
 #define WINDOW_SIZE 4
 #define FRAME_SIZE 1024
-#define TIMEOUT_SEC 2  // Timeout for ACK in seconds
+#define TIMEOUT_SEC 2 
 
 int main() {
     int clientSocket;
