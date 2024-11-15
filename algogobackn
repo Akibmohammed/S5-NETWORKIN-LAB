@@ -1,0 +1,47 @@
+Client (Sender) Algorithm
+Initialize Variables:
+
+Set up base as the starting frame in the window.
+Set up nextFrameToSend as the next frame to send.
+Define an array frames containing all frames to be sent (from 0 to TOTAL_FRAMES - 1).
+Create a UDP socket and configure the server address.
+Send Frames in the Sliding Window:
+
+While base is less than TOTAL_FRAMES (all frames have not been acknowledged yet):
+Loop while nextFrameToSend is within the window (base + WINDOW_SIZE) and hasn’t reached TOTAL_FRAMES:
+Send frames[nextFrameToSend] to the server.
+Print a message indicating the frame is sent.
+Increment nextFrameToSend to send the next frame.
+Wait for Acknowledgment:
+
+Receive acknowledgment from the server:
+If acknowledgment (ack) is received:
+Print a message confirming receipt of ACK.
+Update base to ack + 1 to slide the window forward (as frames up to ack are now acknowledged).
+If no acknowledgment is received (timeout occurs):
+Print a timeout message and reset nextFrameToSend to base to resend frames starting from base.
+End Transmission:
+
+When base equals TOTAL_FRAMES (all frames have been sent and acknowledged), print a completion message and close the client socket.
+Server (Receiver) Algorithm
+Initialize Variables:
+
+Set up expectedFrame to track the next frame expected in order.
+Create a UDP socket, bind it to the server address and port, and start listening.
+Receive Frames from Client:
+
+Loop forever (or until all frames are received if specified):
+Receive a frame from the client.
+If the received frame matches expectedFrame:
+Print a message confirming receipt of the expected frame.
+Update ack to the current frame and increment expectedFrame to prepare for the next frame.
+If the frame is out-of-order:
+Print a message indicating an out-of-order frame.
+Set ack to expectedFrame - 1 to acknowledge the last correctly received frame.
+Send Acknowledgment:
+
+Send the acknowledgment (ack) back to the client, indicating the last correctly received frame.
+Print a message confirming the sent acknowledgment.
+End:
+
+The server will continue to listen for frames indefinitely until manually stopped or a condition is set to break the loop.
