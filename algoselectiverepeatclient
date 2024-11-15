@@ -1,0 +1,24 @@
+Client (Sender)
+Initialize:
+
+Set up a sliding window of frames (WINDOW_SIZE).
+Track the next frame to send (frameToSend) and an array frameAck to mark acknowledged frames.
+Sending Frames:
+
+While there are frames left to send:
+For each frame within the current window:
+If the frame hasn’t been acknowledged, send it to the server.
+Wait for acknowledgments from the server.
+Receive Acknowledgments:
+
+For each frame in the window:
+Wait for acknowledgment with a timeout:
+If acknowledgment is received:
+Mark the frame as acknowledged.
+If the lowest frame in the window is acknowledged, slide the window forward.
+If timeout occurs (no acknowledgment), mark the frame for resending.
+Repeat Steps 2–3 until all frames are acknowledged.
+
+End:
+
+Close the connection once all frames are acknowledged.
