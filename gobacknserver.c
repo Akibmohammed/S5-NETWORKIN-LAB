@@ -43,7 +43,7 @@ int main() {
             expectedFrame++;
         } else {
             printf("Out-of-order frame: %d, expected: %d. Resending ACK for %d\n", frame, expectedFrame, expectedFrame - 1);
-            ack = expectedFrame - 1;  // Resend last ACK
+            ack = expectedFrame - 1;  
         }
 
         sendto(sockfd, &ack, sizeof(ack), 0, (struct sockaddr *)&clientAddr, addr_size);
